@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    {% load static %}
+
+    <title>Hospital Management System</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+</head>
+    
+
+<body>
+
+    <h1>Hospital Management System</h1>
+
+    <h2>Patient Management</h2>
+
+    <form>
+
+        <label>Patient Name:</label>
+        <input type="text" id="name" required>
+
+        <label>Age:</label>
+        <input type="number" id="age" required>
+
+        <label>Gender:</label>
+        <input type="text" id="gender" required>
+
+        <label>Phone:</label>
+        <input type="text" id="phone" required>
+
+        <label>Email:</label>
+        <input type="email" id="email" required>
+
+        <label>Disease:</label>
+        <input type="text" id="disease" required>
+
+        <label>Doctor Name:</label>
+        <input type="text" id="doctor_name" required>
+
+        <button type="submit">Add Patient</button>
+            Add Patient
+        </button>
+
+    <form onsubmit="addPatient(event)"></form>
+
+
+    <h2>Patient List</h2>
+
+    <input type="text" id="searchPatient" placeholder="Enter patient name">
+
+<button type="button" onclick="searchPatient()">
+    Search
+</button>
+
+    <button type="button" onclick="loadPatients()">
+        View Patients
+    </button>
+
+    <div id="patientList"></div>
+
+
+    <script>
+
+        async function addPatient(event) {
+             event.preventDefault();
+
+    if (!document.querySelector("form").checkValidity()) {
+        document.querySelector("form").reportValidity();
+        return;
+    }
+
+            const patient = {
+
+                name: document.getElementById("name").value,
+
+                age: document.getElementById("age").value,
+
+                gender: document.getElementById("gender").value,
+
+                phone: document.getElementById("phone").value,
+
+                email: document.getElementById("email").value,
+
+                disease: document.getElementById("disease").value,
+
+                doctor_name: document.getElementById("doctor_name").value
+            };
+
+
+            const response = await fetch("/api/patients/", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify(patient)
+
+            });
+
+
+            const data = await response.json();
+
+
+            if (response.ok) {
+
+                alert("Patient added successfully!");
+
+            } else {
+
+                alert(JSON.stringify(data));
+
+            }
+
+        }
+
+
+    async function loadPatients() {
+
+    const response = await fetch("/api/patients/");
+    const patients = await response.json();
+
+    let output = `
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Disease</th>
+                <th>Doctor</th>
+                <th>Actions</th>
+            </tr>
+    `;
+
+    patients.forEach(patient => {
+
+        output += `
+            <tr>
+                <td>${patient.id}</td>
+                <td>${patient.name}</td>
+                <td>${patient.age}</td>
+                <td>${patient.disease}</td>
+                <td>${patient.doctor_name}</td>
+                <td>
+                    <button onclick="updatePatient(${patient.id})">
+                        Update
+                    </button>
+
+                    <button onclick="deletePatient(${patient.id})">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `;
+
+    });
+
+    output += `</table>`;
+
+    document.getElementById("patientList").innerHTML = output;
+}
+
+async function updatePatient(id) {
+
+    const name = prompt("Enter Patient Name:");
+    const age = prompt("Enter Age:");
+    const gender = prompt("Enter Gender:");
+    const phone = prompt("Enter Phone:");
+    const email = prompt("Enter Email:");
+    const disease = prompt("Enter Disease:");
+    const doctor_name = prompt("Enter Doctor Name:");
+
+    const patient = {
+        name: name,
+        age: age,
+        gender: gender,
+        phone: phone,
+        email: email,
+        disease: disease,
+        doctor_name: doctor_name
+    };
+
+    const response = await fetch(`/api/patients/${id}/`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(patient)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        alert("Patient updated successfully!");
+        loadPatients();
+    } else {
+        alert(JSON.stringify(data));
+    }
+}
+
+async function searchPatient() {
+
+    const searchName = document.getElementById("searchPatient").value.toLowerCase();
+
+    const response = await fetch("/api/patients/");
+    const patients = await response.json();
+
+    const results = patients.filter(patient =>
+        patient.name.toLowerCase().includes(searchName)
+    );
+
+    if (results.length === 0) {
+        document.getElementById("patientList").innerHTML =
+            "<p>No patient found.</p>";
+        return;
+    }
+
+    let output = `
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Disease</th>
+                <th>Doctor</th>
+                <th>Actions</th>
+            </tr>
+    `;
+
+    results.forEach(patient => {
+
+        output += `
+            <tr>
+                <td>${patient.id}</td>
+                <td>${patient.name}</td>
+                <td>${patient.age}</td>
+                <td>${patient.disease}</td>
+                <td>${patient.doctor_name}</td>
+                <td>
+                    <button onclick="updatePatient(${patient.id})">
+                        Update
+                    </button>
+
+                    <button onclick="deletePatient(${patient.id})">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    output += `</table>`;
+
+    document.getElementById("patientList").innerHTML = output;
+}
+
+async function deletePatient(id) {
+
+    const confirmDelete = confirm("Are you sure you want to delete this patient?");
+
+    if (!confirmDelete) {
+        return;
+    }
+
+    const response = await fetch(`/api/patients/${id}/`, {
+        method: "DELETE"
+    });
+
+    if (response.ok) {
+        alert("Patient deleted successfully!");
+        loadPatients();
+    } else {
+        alert("Failed to delete patient.");
+    }
+}
+
+    </script>
+
+</body>
+</html>
